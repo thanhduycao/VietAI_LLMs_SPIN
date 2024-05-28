@@ -5,6 +5,7 @@ import warnings
 from collections import defaultdict
 from copy import deepcopy
 from typing import Any, Callable, Dict, List, Literal, Optional, Tuple, Union
+import gc
 
 import torch
 import torch.nn as nn
@@ -31,7 +32,6 @@ from trl.trainer.utils import disable_dropout_in_model, pad_to_length
 
 from .utils import DataCollatorWithPadding
 from contextlib import contextmanager, nullcontext
-
 
 if is_peft_available():
     from peft import PeftModel, get_peft_model, prepare_model_for_kbit_training
@@ -454,7 +454,7 @@ class SPINTrainer(Trainer):
         real_rewards = self.beta * (policy_real_logps - opponent_real_logps).detach()
         generated_rewards = self.beta * (policy_generated_logps - opponent_generated_logps).detach()
 
-        print(f"losses: {losses}")
+        # print(f"losses: {losses}")
         # print(f"policy_real_logps: {policy_real_logps}")
         # print(f"policy_generated_logps: {policy_generated_logps}")
         # print(f"opponent_real_logps: {opponent_real_logps}")
@@ -659,6 +659,12 @@ class SPINTrainer(Trainer):
 
         return policy_output_decoded, reference_output_decoded
 
+    def training_step(self, model: nn.Module, inputs: Dict[str, Union[torch.Tensor, Any]]) -> torch.Tensor:
+        loss_step = super().training_step(model, inputs)
+        torch.cuda.empty_cache()
+        gc.collect()
+        return loss_step
+    
     def prediction_step(
         self,
         model: Union[PreTrainedModel, nn.Module],
