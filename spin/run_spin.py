@@ -46,17 +46,11 @@ def apply_chat_template(
             real_messages = example["real"][2:]
             generated_messages = example["generated"][2:]
 
-        #real_messages = example["real"][1:]
-        #generated_messages = example["generated"][1:]
-
         example["text_real"] = real_messages[0]["content"] + "</s>"
         example["text_generated"] = generated_messages[0]["content"] + "</s>"
         example["text_prompt"] = tokenizer.apply_chat_template(
             prompt_messages, tokenize=False, add_generation_prompt=True
         )
-        
-        #example["text_real"] = _strip_prefix(example["text_real"], assistant_prefix)
-        #example["text_generated"] = _strip_prefix(example["text_generated"], assistant_prefix)
     else:
         raise ValueError(
             f"Require `[real, generated]` keys but found {list(example.keys())}"
@@ -167,6 +161,7 @@ def main():
         max_length=training_args.max_length,
         max_prompt_length=training_args.max_prompt_length,
         peft_config=get_peft_config(model_args),
+        generate_during_eval=True
     )
 
     ###############

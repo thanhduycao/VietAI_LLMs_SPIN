@@ -481,6 +481,8 @@ class SPINTrainer(Trainer):
         Returns:
             A tensor of shape (batch_size,) containing the average/sum log probabilities of the given labels under the given logits.
         """
+        print("Logits shape: ", logits.shape)
+        print("Labels shape: ", labels.shape)
         if logits.shape[:-1] != labels.shape:
             raise ValueError("Logits (batch and sequence length dim) and labels must have the same shape.")
 

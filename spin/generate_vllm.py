@@ -54,7 +54,6 @@ def main():
     else:
         data = data[:]['real']
 
-    #prompts_all = ["### Instruction: " + data[idx][0]['content'] + "\n\n### Response: " for idx in range(len(data))]
     prompts_all = []
     prompts_old = []
     corrects_all = []
@@ -71,13 +70,9 @@ def main():
             prompts_system.append("")
             prompts_old.append(data[idx][0]['content'])
             corrects_all.append(data[idx][1]['content'])
-        input_ids = tokenizer.apply_chat_template(conversation, return_tensors="pt")
-        prompt = tokenizer.decode(input_ids[0])
+        prompt = tokenizer.apply_chat_template(conversation, tokenize=False, add_generation_prompt=True)
         prompts_all.append(prompt)
 
-        
-    # prompts_old = [data[idx][0]['content'] for idx in range(len(data))]
-    # corrects_all = [data[idx][1]['content'] for idx in range(len(data))]
 
     start=time.time()
 
@@ -85,7 +80,7 @@ def main():
     results_gathered = list(map(lambda x: x.outputs[0].text, 
                                 llm.generate(prompts_all, sampling_params)))
 
-    results = [r.replace("</s>","").strip() for r in results_gathered]
+    results = [r.replace("</s>","").lstrip() for r in results_gathered]
 
     timediff=time.time()-start
     print(f"time elapsed: {timediff}")
@@ -96,6 +91,7 @@ def main():
             d = {"real": [{"role": "user", "content": prompts_old[idx]}, {"role": "assistant", "content": corrects_all[idx]}], "generated": [{"role": "user", "content": prompts_old[idx]}, {"role": "assistant", "content": results[idx]}]}
         else:
             d = {"real": [{"role": "system", "content": prompts_system[idx]}, {"role": "user", "content": prompts_old[idx]}, {"role": "assistant", "content": corrects_all[idx]}], "generated": [{"role": "system", "content": prompts_system[idx]}, {"role": "user", "content": prompts_old[idx]}, {"role": "assistant", "content": results[idx]}]}
+        #print(d)
         if args.split == 'test':
             filename = f"{args.output_dir}/loser_{data_frac}_test.jsonl"
         else:
