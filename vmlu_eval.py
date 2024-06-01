@@ -4,10 +4,18 @@ import tqdm
 import pandas as pd
 import time
 import re
+import argparse
 from vllm import LLM, SamplingParams
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
+def setup_arg_parser():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--model_path', type=str, default="Viet-Mistral/Vistral-7B-Chat")
+    parser.add_argument('--output_dir', type=str, default="all_res/gpt_result")
+    return parser.parse_args()
+
 if __name__ == "__main__":
+    args = setup_arg_parser()
     data = []
     with open('vmlu_v2/test.jsonl', 'r') as f:
         lines = f.readlines()
@@ -15,10 +23,10 @@ if __name__ == "__main__":
             data.append(json.loads(line))
 
     # Loading the model
-    llm = LLM(model='Viet-Mistral/Vistral-7B-Chat')  # Name or path of your model
+    llm = LLM(model=args.model_path)  # Name or path of your model
     sampling_params = SamplingParams(temperature=0.0, max_tokens=768)
 
-    tokenizer = AutoTokenizer.from_pretrained('Viet-Mistral/Vistral-7B-Chat')
+    tokenizer = AutoTokenizer.from_pretrained(args.model_path)
 
     #data = data[:3] # for debuging only
     all_messages = []
@@ -59,13 +67,12 @@ if __name__ == "__main__":
         })
 
 
-    result_folder = "all_res/gpt_result"
+    result_folder = args.output_dir
     os.makedirs(result_folder, exist_ok=True)
     
-    if idx % 100 == 0:
-        pd.DataFrame(all_res).to_csv(f"all_res/gpt_result/raw_result_{len(all_res)}.csv", index=False)
+    pd.DataFrame(all_res).to_csv(f"{result_folder}/raw_result_{len(all_res)}.csv", index=False)
     
     df = pd.DataFrame(all_res)
     df['answer'] = df.answer.map(lambda x: x[0].lower())
     df['answer'] = df['answer'].map(lambda x: re.sub(r'[^abcde]', '', x))
-    submission_csv = df[['id', 'answer']].to_csv('submission.csv', index=None)
+    submission_csv = df[['id', 'answer']].to_csv(f"{result_folder}/submission.csv", index=None)
